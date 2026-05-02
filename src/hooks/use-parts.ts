@@ -19,7 +19,7 @@ export function useParts() {
       });
 
     const channel = supabase
-      .channel("parts-realtime")
+      .channel(`parts-realtime-${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "parts" },
