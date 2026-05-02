@@ -4,6 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ArrowDown, ArrowUp, ArrowUpDown, Pencil, Plus, Search, Trash2, PackageX } from "lucide-react";
+import { Upload, Download } from "lucide-react";
+import * as XLSX from "xlsx";
+import { useRef } from "react";
 import { CAR_MAKES, CATEGORIES, partStatus, type Part } from "@/lib/parts";
 import { StatusBadge } from "./StatusBadge";
 import { MakeBadge } from "./MakeBadge";
@@ -26,6 +29,8 @@ export function InventoryTable({ parts, loading }: { parts: Part[]; loading: boo
   const [editing, setEditing] = useState<Part | null>(null);
   const [confirmDel, setConfirmDel] = useState<Part | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
 
   // debounce search
   useMemo(() => {
@@ -80,6 +85,60 @@ export function InventoryTable({ parts, loading }: { parts: Part[]; loading: boo
     }, 350);
   };
 
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf);
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+      if (!rows.length) {
+        toast.error("Empty file");
+        return;
+      }
+      const norm = (k: string) => k.toLowerCase().trim().replace(/\s+/g, "_");
+      const payload = rows.map((r) => {
+        const o: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(r)) o[norm(k)] = v;
+        return {
+          name: String(o.name ?? o.part ?? "").trim(),
+          make: String(o.make ?? "Other").trim(),
+          model: String(o.model ?? "").trim(),
+          category: String(o.category ?? "Other").trim(),
+          sku: String(o.sku ?? "").trim() || `IMP-${Math.floor(Math.random() * 9000 + 1000)}`,
+          price: Number(o.price ?? 0) || 0,
+          qty: Number(o.qty ?? o.quantity ?? 0) || 0,
+          threshold: Number(o.threshold ?? 5) || 5,
+          supplier: o.supplier ? String(o.supplier) : null,
+          notes: o.notes ? String(o.notes) : null,
+        };
+      }).filter((p) => p.name);
+      if (!payload.length) {
+        toast.error("No valid rows", { description: "Make sure your sheet has a 'name' column." });
+        return;
+      }
+      const { error } = await supabase.from("parts").insert(payload);
+      if (error) toast.error("Import failed", { description: error.message });
+      else toast.success(`Imported ${payload.length} parts`);
+    } catch (err) {
+      toast.error("Could not parse file", { description: (err as Error).message });
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const downloadTemplate = () => {
+    const ws = XLSX.utils.json_to_sheet([
+      { name: "Brake Pads Front", make: "Toyota", model: "Camry", category: "Brakes", sku: "TOY-BR-1234", price: 49.99, qty: 20, threshold: 5, supplier: "Bosch", notes: "" },
+    ]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Parts");
+    XLSX.writeFile(wb, "parts-template.xlsx");
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row md:items-center gap-3">
@@ -113,6 +172,13 @@ export function InventoryTable({ parts, loading }: { parts: Part[]; loading: boo
         <Button onClick={() => { setEditing(null); setOpen(true); }} className="gradient-primary text-primary-foreground shadow-glow hover:opacity-90 transition active:scale-95">
           <Plus className="size-4 mr-1" /> Add Part
         </Button>
+        <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importing} className="active:scale-95">
+          <Upload className="size-4 mr-1" /> {importing ? "Importing..." : "Import Excel"}
+        </Button>
+        <Button variant="ghost" onClick={downloadTemplate} className="active:scale-95">
+          <Download className="size-4 mr-1" /> Template
+        </Button>
+        <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleImport} className="hidden" />
       </div>
 
       <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card">
