@@ -52,12 +52,14 @@ function AuthPage() {
           if (signInErr) throw signInErr;
         }
         toast.success("Account created! Redirecting...");
-        navigate({ to: "/dashboard" });
+        window.location.href = "/dashboard";
+        return;
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome back!");
-        navigate({ to: "/dashboard" });
+        window.location.href = "/dashboard";
+        return;
       }
     } catch (err: any) {
       toast.error(err.message ?? "Something went wrong");
