@@ -27,11 +27,12 @@ function AuthPage() {
   useEffect(() => setIsSignup(mode === "signup"), [mode]);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session) navigate({ to: "/dashboard", replace: true } as any);
-    });
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard", replace: true } as any);
+    // Only redirect on a fresh sign-in event so users can switch accounts
+    // on the same device without being bounced away from /auth.
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        navigate({ to: "/dashboard", replace: true } as any);
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
