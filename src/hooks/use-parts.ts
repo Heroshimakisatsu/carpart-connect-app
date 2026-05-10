@@ -1,51 +1,74 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Part } from "@/lib/parts";
 
-export function useParts() {
-  const [parts, setParts] = useState<Part[] | null>(null);
-  const [loading, setLoading] = useState(true);
+// Module-level singleton store: one fetch, one realtime channel,
+// shared across every component that calls useParts().
+type State = { parts: Part[] | null; loading: boolean };
 
-  useEffect(() => {
-    let mounted = true;
-    supabase
-      .from("parts")
-      .select("*")
-      .order("updated_at", { ascending: false })
-      .then(({ data }) => {
-        if (!mounted) return;
-        setParts((data as Part[]) ?? []);
-        setLoading(false);
-      });
+let state: State = { parts: null, loading: true };
+const listeners = new Set<() => void>();
+let initialized = false;
+let channel: ReturnType<typeof supabase.channel> | null = null;
 
-    const channel = supabase
-      .channel(`parts-realtime-${Math.random().toString(36).slice(2)}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "parts" },
-        (payload) => {
-          setParts((prev) => {
-            const list = prev ? [...prev] : [];
-            if (payload.eventType === "INSERT") {
-              return [payload.new as Part, ...list.filter((p) => p.id !== (payload.new as Part).id)];
-            }
-            if (payload.eventType === "UPDATE") {
-              return list.map((p) => (p.id === (payload.new as Part).id ? (payload.new as Part) : p));
-            }
-            if (payload.eventType === "DELETE") {
-              return list.filter((p) => p.id !== (payload.old as Part).id);
-            }
-            return list;
-          });
+function setState(next: State) {
+  state = next;
+  listeners.forEach((l) => l());
+}
+
+function ensureInitialized() {
+  if (initialized || typeof window === "undefined") return;
+  initialized = true;
+
+  supabase
+    .from("parts")
+    .select("*")
+    .order("updated_at", { ascending: false })
+    .then(({ data }) => {
+      setState({ parts: (data as Part[]) ?? [], loading: false });
+    });
+
+  channel = supabase
+    .channel("parts-realtime")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "parts" },
+      (payload) => {
+        const list = state.parts ? [...state.parts] : [];
+        let next = list;
+        if (payload.eventType === "INSERT") {
+          const row = payload.new as Part;
+          next = [row, ...list.filter((p) => p.id !== row.id)];
+        } else if (payload.eventType === "UPDATE") {
+          const row = payload.new as Part;
+          next = list.map((p) => (p.id === row.id ? row : p));
+        } else if (payload.eventType === "DELETE") {
+          const row = payload.old as Part;
+          next = list.filter((p) => p.id !== row.id);
         }
-      )
-      .subscribe();
+        setState({ ...state, parts: next });
+      }
+    )
+    .subscribe();
+}
 
-    return () => {
-      mounted = false;
-      supabase.removeChannel(channel);
-    };
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+export function useParts() {
+  useEffect(() => {
+    ensureInitialized();
   }, []);
 
-  return { parts: parts ?? [], loading };
+  const snapshot = useSyncExternalStore(
+    subscribe,
+    () => state,
+    () => state
+  );
+
+  return { parts: snapshot.parts ?? [], loading: snapshot.loading };
 }
