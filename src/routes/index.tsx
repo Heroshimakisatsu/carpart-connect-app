@@ -1,7 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Wrench, ArrowRight, Boxes, AlertTriangle, BarChart3, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -14,14 +12,6 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
-  const [signedIn, setSignedIn] = useState(false);
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSignedIn(!!s));
-    return () => sub.subscription.unsubscribe();
-  }, []);
-  const ctaTo = signedIn ? "/dashboard" : "/auth";
-  const ctaSearch = signedIn ? undefined : ({ mode: "signup" } as const);
   return (
     <div className="min-h-screen blueprint-bg text-foreground">
       <header className="max-w-7xl mx-auto flex items-center justify-between px-6 py-5">
@@ -32,10 +22,11 @@ function Landing() {
           <div className="font-display font-bold text-2xl tracking-tight">PartsPro</div>
         </div>
         <Link
-          to={signedIn ? "/dashboard" : "/auth"}
+          to="/auth"
+          search={{ mode: "signin" }}
           className="text-sm font-medium text-muted-foreground hover:text-foreground transition"
         >
-          {signedIn ? "Go to dashboard" : "Sign in"}
+          Sign in
         </Link>
       </header>
 
@@ -51,21 +42,19 @@ function Landing() {
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
           <Link
-            to={ctaTo}
-            search={ctaSearch as any}
+            to="/auth"
+            search={{ mode: "signup" }}
             className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl gradient-primary text-primary-foreground font-semibold shadow-glow hover:scale-[1.02] transition"
           >
-            {signedIn ? "Go to Dashboard" : "Get Started"} <ArrowRight className="size-4" />
+            Get Started <ArrowRight className="size-4" />
           </Link>
-          {!signedIn && (
-            <Link
-              to="/auth"
-              search={{ mode: "signup" }}
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl border border-border bg-card hover:border-primary/50 font-semibold transition"
-            >
-              Sign Up Free
-            </Link>
-          )}
+          <Link
+            to="/auth"
+            search={{ mode: "signup" }}
+            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl border border-border bg-card hover:border-primary/50 font-semibold transition"
+          >
+            Sign Up Free
+          </Link>
         </div>
       </section>
 
