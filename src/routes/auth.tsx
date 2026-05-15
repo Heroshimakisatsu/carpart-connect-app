@@ -25,17 +25,11 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => setIsSignup(mode === "signup"), [mode]);
-
-  useEffect(() => {
-    // Only redirect on a fresh sign-in event so users can switch accounts
-    // on the same device without being bounced away from /auth.
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) {
-        navigate({ to: "/dashboard", replace: true } as any);
-      }
-    });
-    return () => sub.subscription.unsubscribe();
-  }, [navigate]);
+  // NOTE: We intentionally do NOT auto-redirect on SIGNED_IN here.
+  // Supabase fires SIGNED_IN on initial session restore from localStorage,
+  // which would bounce already-signed-in visitors off /auth the moment they
+  // land here (e.g. clicking "Get Started" from the landing page).
+  // The form submit and OAuth flow already navigate to /dashboard explicitly.
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
