@@ -151,11 +151,20 @@ function AuthPage() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword((v) => !v)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowPassword((v) => !v);
+                  }}
                   aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
+                  tabIndex={-1}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-md text-muted-foreground hover:text-foreground transition cursor-pointer"
                 >
-                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  {showPassword ? (
+                    <EyeOff className="size-4 pointer-events-none" />
+                  ) : (
+                    <Eye className="size-4 pointer-events-none" />
+                  )}
                 </button>
               </div>
             </div>
