@@ -13,7 +13,7 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   return (
-    <div className="min-h-screen blueprint-bg text-foreground">
+    <div className="min-h-screen blueprint-bg text-foreground dark">
       <header className="max-w-7xl mx-auto flex items-center justify-between px-6 py-5">
         <div className="flex items-center gap-3">
           <div className="size-10 rounded-lg gradient-primary grid place-items-center shadow-glow">
@@ -23,7 +23,6 @@ function Landing() {
         </div>
         <Link
           to="/auth"
-          search={{ mode: "signin" }}
           className="text-sm font-medium text-muted-foreground hover:text-foreground transition"
         >
           Sign in
@@ -43,17 +42,17 @@ function Landing() {
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
           <Link
             to="/auth"
-            search={{ mode: "signup" }}
+            search={{ mode: "signup", role: "cashier" } as any}
             className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl gradient-primary text-primary-foreground font-semibold shadow-glow hover:scale-[1.02] transition"
           >
-            Get Started <ArrowRight className="size-4" />
+            Get Started / Sign in as Cashier <ArrowRight className="size-4" />
           </Link>
           <Link
             to="/auth"
-            search={{ mode: "signup" }}
+            search={{ mode: "signup", role: "admin" } as any}
             className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl border border-border bg-card hover:border-primary/50 font-semibold transition"
           >
-            Sign Up Free
+            Get Started / Sign in as Admin
           </Link>
         </div>
       </section>

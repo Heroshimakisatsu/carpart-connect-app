@@ -1,10 +1,12 @@
-import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Package, AlertTriangle, BarChart3, Settings, Wrench, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { Link, Outlet, useRouterState, useNavigate } from "@tanstack/react-router";
+import { LayoutDashboard, Package, AlertTriangle, BarChart3, Settings, Wrench, Menu, X, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { useParts } from "@/hooks/use-parts";
-import { partStatus } from "@/lib/parts";
+import { isLowStockAlert } from "@/lib/parts";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { supabase } from "@/integrations/supabase/client";
 
 type NavItem = { to: "/dashboard" | "/inventory" | "/alerts" | "/reports" | "/settings"; label: string; icon: typeof LayoutDashboard; exact?: boolean; alert?: boolean };
 const NAV: NavItem[] = [
@@ -18,12 +20,74 @@ const NAV: NavItem[] = [
 export function AppLayout() {
   const [open, setOpen] = useState(false);
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const { parts } = useParts();
-  const alertCount = parts.filter((p) => partStatus(p) !== "in").length;
+  const navigate = useNavigate();
+  
+  const [authReady, setAuthReady] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
-  // Pages without app chrome (sidebar): landing + auth
+  const { parts } = useParts();
+  const alertCount = parts.filter((p) => isLowStockAlert(p)).length;
+
   const isPublic = path === "/" || path.startsWith("/auth");
+
+  useEffect(() => {
+    if (isPublic) return;
+
+    let active = true;
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (!active) return;
+      setSignedIn(!!session);
+      setUserRole(session?.user?.user_metadata?.role || "admin");
+    });
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      setSignedIn(!!data.session);
+      setUserRole(data.session?.user?.user_metadata?.role || "admin");
+      setAuthReady(true);
+    });
+
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
+  }, [isPublic]);
+
+  useEffect(() => {
+    if (isPublic || !authReady) return;
+
+    if (!signedIn) {
+      navigate({ to: "/auth", search: { mode: "signin" }, replace: true } as any);
+      return;
+    }
+
+    if (userRole === "cashier" && path !== "/cashier") {
+      navigate({ to: "/cashier", replace: true } as any);
+    } else if (userRole === "admin" && path === "/cashier") {
+      navigate({ to: "/dashboard", replace: true } as any);
+    }
+  }, [authReady, signedIn, userRole, path, isPublic, navigate]);
+
   if (isPublic) {
+    return (
+      <>
+        <Outlet />
+        <Toaster position="top-right" richColors />
+      </>
+    );
+  }
+
+  if (!authReady || !signedIn) {
+    return (
+      <div className="min-h-screen grid place-items-center blueprint-bg">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const isCashierRoute = path === "/cashier";
+  if (isCashierRoute) {
     return (
       <>
         <Outlet />
@@ -94,6 +158,9 @@ export function AppLayout() {
               </Link>
             );
           })}
+          <div className="pt-2 mt-2 border-t border-sidebar-border">
+            <ThemeToggle />
+          </div>
         </nav>
 
         <div className="p-4 text-xs text-muted-foreground border-t border-sidebar-border">

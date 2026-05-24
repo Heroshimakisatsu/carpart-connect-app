@@ -5,11 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
+    "dev:cmd": "cmd /c \"npm run dev\"",
     "build": "vite build",
+    "build:cmd": "cmd /c \"npm run build\"",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
+    "preview:cmd": "cmd /c \"npm run preview\"",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:migrate": "npx supabase db push",
+    "db:migrate:cmd": "cmd /c \"npx --yes supabase db push --yes\"",
+    "supabase:link:cmd": "cmd /c \"npx --yes supabase link --project-ref hsbesbgrwhhabrvlxybw\""
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.25.5",

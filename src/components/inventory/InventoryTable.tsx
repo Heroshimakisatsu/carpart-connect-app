@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 
 type SortKey = "name" | "make" | "category" | "price" | "qty";
 
-export function InventoryTable({ parts, loading }: { parts: Part[]; loading: boolean }) {
+export function InventoryTable({ parts, loading, missingInitialQty }: { parts: Part[]; loading: boolean; missingInitialQty: boolean }) {
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [makeF, setMakeF] = useState<string>("all");
@@ -31,6 +31,7 @@ export function InventoryTable({ parts, loading }: { parts: Part[]; loading: boo
   const [removingId, setRemovingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
+  const [showSchemaWarning, setShowSchemaWarning] = useState(true);
 
   // debounce search
   useMemo(() => {
@@ -132,7 +133,7 @@ export function InventoryTable({ parts, loading }: { parts: Part[]; loading: boo
 
   const downloadTemplate = () => {
     const ws = XLSX.utils.json_to_sheet([
-      { name: "Brake Pads Front", make: "Toyota", model: "Camry", category: "Brakes", sku: "TOY-BR-1234", price: 49.99, qty: 20, threshold: 5, supplier: "Bosch", notes: "" },
+      { name: "Brake Pads Front", make: "Toyota", model: "Camry", category: "Brakes", sku: "TOY-BR-1234", price: 49.99, qty: 20, initial_qty: 100, threshold: 5, supplier: "Bosch", notes: "" },
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Parts");
@@ -141,6 +142,25 @@ export function InventoryTable({ parts, loading }: { parts: Part[]; loading: boo
 
   return (
     <div className="space-y-4">
+      {showSchemaWarning && missingInitialQty && (
+        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-100">
+          <div className="flex items-start gap-2">
+            <div className="mt-0.5 text-yellow-300">⚠️</div>
+            <div className="flex-1">
+              <p className="font-semibold text-yellow-100">Database schema mismatch detected</p>
+              <p className="mt-1 text-yellow-200">
+                Your remote `parts` table has missing `initial_qty` values. Run `npm run db:migrate` or apply the migration in Supabase to keep initial stock consistent.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowSchemaWarning(false)}
+              className="text-yellow-200 hover:text-white"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col md:flex-row md:items-center gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -228,8 +248,8 @@ export function InventoryTable({ parts, loading }: { parts: Part[]; loading: boo
                   <td className="px-4 py-3 hidden lg:table-cell">{p.category}</td>
                   <td className="px-4 py-3 hidden lg:table-cell font-mono text-xs text-muted-foreground">{p.sku}</td>
                   <td className="px-4 py-3 text-right tabular-nums">${Number(p.price).toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{p.qty}</td>
-                  <td className="px-4 py-3"><StatusBadge qty={p.qty} threshold={p.threshold} /></td>
+                  <td className="px-4 py-3 text-right tabular-nums">{p.qty} / {p.initial_qty ?? p.qty}</td>
+                  <td className="px-4 py-3"><StatusBadge qty={p.qty} initial_qty={p.initial_qty ?? p.qty} threshold={p.threshold} /></td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <Button size="icon" variant="ghost" onClick={() => { setEditing(p); setOpen(true); }} className="size-8">

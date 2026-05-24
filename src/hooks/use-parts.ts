@@ -4,9 +4,9 @@ import type { Part } from "@/lib/parts";
 
 // Module-level singleton store: one fetch, one realtime channel,
 // shared across every component that calls useParts().
-type State = { parts: Part[] | null; loading: boolean };
+type State = { parts: Part[] | null; loading: boolean; missingInitialQty: boolean };
 
-let state: State = { parts: null, loading: true };
+let state: State = { parts: null, loading: true, missingInitialQty: false };
 const listeners = new Set<() => void>();
 let initialized = false;
 let channel: ReturnType<typeof supabase.channel> | null = null;
@@ -24,8 +24,10 @@ function ensureInitialized() {
     .from("parts")
     .select("*")
     .order("updated_at", { ascending: false })
-    .then(({ data }) => {
-      setState({ parts: (data as Part[]) ?? [], loading: false });
+      .then(({ data }) => {
+        const list = (data as Part[]) ?? [];
+        const missingInitialQty = list.some((row) => row.initial_qty == null);
+        setState({ parts: list, loading: false, missingInitialQty });
     });
 
   channel = supabase
@@ -46,7 +48,7 @@ function ensureInitialized() {
           const row = payload.old as Part;
           next = list.filter((p) => p.id !== row.id);
         }
-        setState({ ...state, parts: next });
+        setState({ ...state, parts: next, missingInitialQty: next.some((row) => row.initial_qty == null) });
       }
     )
     .subscribe();
@@ -70,5 +72,5 @@ export function useParts() {
     () => state
   );
 
-  return { parts: snapshot.parts ?? [], loading: snapshot.loading };
+  return { parts: snapshot.parts ?? [], loading: snapshot.loading, missingInitialQty: snapshot.missingInitialQty };
 }

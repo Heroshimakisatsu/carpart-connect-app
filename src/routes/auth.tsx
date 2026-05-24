@@ -4,32 +4,37 @@ import { Wrench, ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
-type Search = { mode?: "signin" | "signup" };
+type Search = { mode?: "signin" | "signup"; role?: "admin" | "cashier" };
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (s: Record<string, unknown>): Search => ({
     mode: s.mode === "signup" ? "signup" : "signin",
+    role: (s.role === "admin" || s.role === "cashier") ? s.role : undefined,
   }),
   head: () => ({ meta: [{ title: "Sign in — PartsPro" }] }),
   component: AuthPage,
 });
 
 function AuthPage() {
-  const { mode } = Route.useSearch();
+  const { mode, role: initialRole } = Route.useSearch();
   const navigate = useNavigate();
   const [isSignup, setIsSignup] = useState(mode === "signup");
+  const [role, setRole] = useState<"admin" | "cashier">(initialRole || "admin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => setIsSignup(mode === "signup"), [mode]);
-  // NOTE: We intentionally do NOT auto-redirect on SIGNED_IN here.
-  // Supabase fires SIGNED_IN on initial session restore from localStorage,
-  // which would bounce already-signed-in visitors off /auth the moment they
-  // land here (e.g. clicking "Get Started" from the landing page).
-  // The form submit and OAuth flow already navigate to /dashboard explicitly.
+  useEffect(() => {
+    if (initialRole) {
+      setRole(initialRole);
+    }
+  }, [initialRole]);
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +44,10 @@ function AuthPage() {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+          options: { 
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+            data: { role }
+          },
         });
         if (error) throw error;
         // If email confirmation is on, signUp returns no session — sign in directly.
@@ -48,13 +56,17 @@ function AuthPage() {
           if (signInErr) throw signInErr;
         }
         toast.success("Account created! Redirecting...");
-        window.location.href = "/dashboard";
+        const { data: { user } } = await supabase.auth.getUser();
+        const userRole = user?.user_metadata?.role || "admin";
+        navigate({ to: userRole === "cashier" ? "/cashier" : "/dashboard", replace: true });
         return;
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome back!");
-        window.location.href = "/dashboard";
+        const { data: { user } } = await supabase.auth.getUser();
+        const userRole = user?.user_metadata?.role || "admin";
+        navigate({ to: userRole === "cashier" ? "/cashier" : "/dashboard", replace: true });
         return;
       }
     } catch (err: any) {
@@ -113,6 +125,12 @@ function AuthPage() {
             {isSignup ? "Start managing your parts in minutes." : "Sign in to access your inventory."}
           </p>
 
+          {initialRole && (
+            <p className="text-sm font-semibold text-muted-foreground mt-2">
+              {initialRole === "cashier" ? "Cashier auth" : "Admin auth"}
+            </p>
+          )}
+
           <button
             onClick={handleGoogle}
             disabled={loading}
@@ -127,6 +145,7 @@ function AuthPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Account role selection removed */}
             <div>
               <label className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Email</label>
               <input
@@ -151,20 +170,11 @@ function AuthPage() {
                 />
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setShowPassword((v) => !v);
-                  }}
+                  onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
-                  tabIndex={-1}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-md text-muted-foreground hover:text-foreground transition cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
                 >
-                  {showPassword ? (
-                    <EyeOff className="size-4 pointer-events-none" />
-                  ) : (
-                    <Eye className="size-4 pointer-events-none" />
-                  )}
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               </div>
             </div>

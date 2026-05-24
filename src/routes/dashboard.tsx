@@ -17,6 +17,7 @@ function DashboardPage() {
   const navigate = useNavigate();
   const [authReady, setAuthReady] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -25,11 +26,13 @@ function DashboardPage() {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       if (!active) return;
       setSignedIn(!!session);
+      setUserRole(session?.user?.user_metadata?.role || "admin");
     });
 
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return;
       setSignedIn(!!data.session);
+      setUserRole(data.session?.user?.user_metadata?.role || "admin");
       setAuthReady(true);
     });
 
@@ -40,12 +43,16 @@ function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (authReady && !signedIn) {
-      navigate({ to: "/auth", search: { mode: "signin" }, replace: true } as any);
+    if (authReady) {
+      if (!signedIn) {
+        navigate({ to: "/auth", search: { mode: "signin" }, replace: true } as any);
+      } else if (userRole === "cashier") {
+        navigate({ to: "/cashier", replace: true } as any);
+      }
     }
-  }, [authReady, signedIn, navigate]);
+  }, [authReady, signedIn, userRole, navigate]);
 
-  if (!authReady || !signedIn) {
+  if (!authReady || !signedIn || userRole === "cashier") {
     return (
       <div className="min-h-screen grid place-items-center">
         <Loader2 className="size-6 animate-spin text-muted-foreground" />

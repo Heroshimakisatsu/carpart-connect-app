@@ -62,6 +62,36 @@ export type Database = {
         }
         Relationships: []
       }
+      sales: {
+        Row: {
+          id: string
+          cashier: string
+          items: Json
+          subtotal: number
+          tax: number
+          total: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          cashier: string
+          items: Json
+          subtotal?: number
+          tax?: number
+          total?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          cashier?: string
+          items?: Json
+          subtotal?: number
+          tax?: number
+          total?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

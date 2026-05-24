@@ -18,7 +18,7 @@ type Props = {
 
 const empty = {
   name: "", make: "Toyota", model: "", category: "Engine",
-  sku: "", price: "0", qty: "0", threshold: "5", supplier: "", notes: "",
+  sku: "", price: "0", qty: "0", initial_qty: "0", threshold: "5", supplier: "", notes: "",
 };
 
 export function PartFormDrawer({ open, onOpenChange, editing }: Props) {
@@ -33,6 +33,7 @@ export function PartFormDrawer({ open, onOpenChange, editing }: Props) {
         name: editing.name, make: editing.make, model: editing.model,
         category: editing.category, sku: editing.sku,
         price: String(editing.price), qty: String(editing.qty),
+        initial_qty: editing.initial_qty != null ? String(editing.initial_qty) : "",
         threshold: String(editing.threshold),
         supplier: editing.supplier ?? "", notes: editing.notes ?? "",
       });
@@ -50,6 +51,7 @@ export function PartFormDrawer({ open, onOpenChange, editing }: Props) {
     if (!form.sku.trim()) e.sku = "Required";
     if (Number.isNaN(+form.price) || +form.price < 0) e.price = "Invalid";
     if (Number.isNaN(+form.qty) || +form.qty < 0) e.qty = "Invalid";
+    if (Number.isNaN(+form.initial_qty) || +form.initial_qty < 0) e.initial_qty = "Invalid";
     if (Number.isNaN(+form.threshold) || +form.threshold < 0) e.threshold = "Invalid";
     setErrors(e);
     if (Object.keys(e).length) {
@@ -66,12 +68,25 @@ export function PartFormDrawer({ open, onOpenChange, editing }: Props) {
     const payload = {
       name: form.name.trim(), make: form.make, model: form.model.trim(),
       category: form.category, sku: form.sku.trim(),
-      price: +form.price, qty: +form.qty, threshold: +form.threshold,
+      price: +form.price, qty: +form.qty, initial_qty: +form.initial_qty, threshold: +form.threshold,
       supplier: form.supplier.trim() || null, notes: form.notes.trim() || null,
     };
-    const { error } = editing
-      ? await supabase.from("parts").update(payload).eq("id", editing.id)
-      : await supabase.from("parts").insert(payload);
+
+    const execute = async (body: typeof payload) =>
+      editing
+        ? await supabase.from("parts").update(body).eq("id", editing.id)
+        : await supabase.from("parts").insert(body);
+
+    let { error } = await execute(payload);
+
+    if (error && /initial_qty/i.test(error.message || "")) {
+      const retryPayload = { ...payload };
+      // Retry without initial_qty for databases that have not been migrated yet.
+      delete (retryPayload as Partial<typeof retryPayload>).initial_qty;
+      const retry = await execute(retryPayload);
+      error = retry.error;
+    }
+
     setSaving(false);
     if (error) {
       toast.error("Save failed", { description: error.message });
@@ -122,12 +137,15 @@ export function PartFormDrawer({ open, onOpenChange, editing }: Props) {
             </div>
           </Field>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
             <Field label="Price ($)" error={errors.price}>
               <Input type="number" step="0.01" value={form.price} onChange={(e) => set("price", e.target.value)} />
             </Field>
             <Field label="Quantity" error={errors.qty}>
               <Input type="number" value={form.qty} onChange={(e) => set("qty", e.target.value)} />
+            </Field>
+            <Field label="Initial Stock" error={errors.initial_qty}>
+              <Input type="number" value={form.initial_qty} onChange={(e) => set("initial_qty", e.target.value)} />
             </Field>
             <Field label="Low Threshold" error={errors.threshold}>
               <Input type="number" value={form.threshold} onChange={(e) => set("threshold", e.target.value)} />

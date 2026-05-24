@@ -8,7 +8,7 @@ export const Route = createFileRoute("/inventory")({
 });
 
 function InventoryPage() {
-  const { parts, loading } = useParts();
+  const { parts, loading, missingInitialQty } = useParts();
   return (
     <div className="space-y-6">
       <div>
@@ -16,7 +16,7 @@ function InventoryPage() {
         <h1 className="font-display text-4xl font-bold mt-1">Inventory</h1>
         <p className="text-muted-foreground mt-1">Manage every part in stock.</p>
       </div>
-      <InventoryTable parts={parts} loading={loading} />
+      <InventoryTable parts={parts} loading={loading} missingInitialQty={missingInitialQty} />
     </div>
   );
 }

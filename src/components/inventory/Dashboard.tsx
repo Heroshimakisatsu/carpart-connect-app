@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { Package, DollarSign, AlertTriangle, XCircle, Clock } from "lucide-react";
 import type { Part } from "@/lib/parts";
-import { partStatus } from "@/lib/parts";
+import { partStatus, stockAlertTier } from "@/lib/parts";
 import { MakeBadge } from "./MakeBadge";
 
 function useCountUp(target: number, duration = 900) {
@@ -43,7 +43,10 @@ const PIE_COLORS = ["#f97316","#3b82f6","#22c55e","#a855f7","#eab308","#06b6d4",
 export function Dashboard({ parts, loading }: { parts: Part[]; loading: boolean }) {
   const totalParts = parts.reduce((s, p) => s + p.qty, 0);
   const totalValue = parts.reduce((s, p) => s + p.qty * Number(p.price), 0);
-  const lowStock = parts.filter((p) => partStatus(p) === "low").length;
+  const lowStock = parts.filter((p) => {
+    const tier = stockAlertTier(p);
+    return tier === "critically-low" || tier === "low-stock";
+  }).length;
   const outStock = parts.filter((p) => partStatus(p) === "out").length;
 
   const byMake = useMemo(() => {

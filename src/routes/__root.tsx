@@ -1,6 +1,7 @@
 import { Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
 import { AppLayout } from "@/components/AppLayout";
+import { ThemeProvider } from "@/contexts/theme-context";
 
 function NotFoundComponent() {
   return (
@@ -31,8 +32,24 @@ export const Route = createRootRoute({
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" },
       { rel: "stylesheet", href: appCss },
+    ],
+    scripts: [
+      {
+        children: `
+          (function() {
+            try {
+              const saved = localStorage.getItem('theme');
+              const theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+              document.documentElement.classList.remove('dark', 'light');
+              document.documentElement.classList.add(theme);
+            } catch (e) {
+              document.documentElement.classList.add('dark');
+            }
+          })();
+        `,
+      },
     ],
   }),
   shellComponent: RootShell,
@@ -42,9 +59,14 @@ export const Route = createRootRoute({
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <head><HeadContent /></head>
-      <body>{children}<Scripts /></body>
+      <body>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
+        <Scripts />
+      </body>
     </html>
   );
 }

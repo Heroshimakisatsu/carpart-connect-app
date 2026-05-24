@@ -9,16 +9,16 @@ export const CATEGORIES = [
 export type Category = (typeof CATEGORIES)[number];
 
 export const MAKE_COLORS: Record<string, string> = {
-  Toyota: "bg-red-600/20 text-red-300 border-red-500/40",
-  Honda: "bg-red-900/30 text-red-300 border-red-700/40",
-  Nissan: "bg-zinc-500/20 text-zinc-200 border-zinc-400/40",
-  Mazda: "bg-rose-700/20 text-rose-300 border-rose-600/40",
-  Subaru: "bg-blue-600/20 text-blue-300 border-blue-500/40",
-  Ford: "bg-sky-600/20 text-sky-300 border-sky-500/40",
-  Volkswagen: "bg-indigo-700/30 text-indigo-200 border-indigo-500/40",
-  BMW: "bg-cyan-500/20 text-cyan-200 border-cyan-400/40",
-  Mercedes: "bg-slate-400/20 text-slate-100 border-slate-300/40",
-  Other: "bg-muted text-muted-foreground border-border",
+  Toyota: "bg-red-500/15 text-red-600 border-red-500/40",
+  Honda: "bg-orange-500/15 text-orange-600 border-orange-500/40",
+  Nissan: "bg-stone-500/15 text-stone-600 border-stone-500/40",
+  Mazda: "bg-rose-500/15 text-rose-600 border-rose-500/40",
+  Subaru: "bg-blue-500/15 text-blue-600 border-blue-500/40",
+  Ford: "bg-sky-500/15 text-sky-600 border-sky-500/40",
+  Volkswagen: "bg-indigo-500/15 text-indigo-600 border-indigo-500/40",
+  BMW: "bg-cyan-500/15 text-cyan-600 border-cyan-500/40",
+  Mercedes: "bg-slate-500/15 text-slate-600 border-slate-500/40",
+  Other: "bg-stone-500/15 text-stone-600 border-stone-500/40",
 };
 
 export type Part = {
@@ -30,6 +30,7 @@ export type Part = {
   sku: string;
   price: number;
   qty: number;
+  initial_qty: number;
   threshold: number;
   supplier: string | null;
   notes: string | null;
@@ -37,10 +38,46 @@ export type Part = {
   updated_at: string;
 };
 
-export function partStatus(p: Pick<Part,"qty"|"threshold">) {
+export type StockAlertTier =
+  | "out-of-stock"
+  | "critically-low"
+  | "low-stock"
+  | "moderate-stock"
+  | "in-stock"
+  | "stock-full";
+
+export function partStatus(p: Pick<Part, "qty" | "threshold">) {
   if (p.qty <= 0) return "out" as const;
   if (p.qty <= p.threshold) return "low" as const;
   return "in" as const;
+}
+
+export function stockPercentage(p: Pick<Part, "qty" | "initial_qty">) {
+  if (p.initial_qty > 0) {
+    return Math.max(0, Math.min(100, Math.round((p.qty / p.initial_qty) * 100)));
+  }
+  return p.qty <= 0 ? 0 : 100;
+}
+
+export function stockAlertTier(p: Pick<Part, "qty" | "initial_qty" | "threshold">): StockAlertTier {
+  if (p.initial_qty > 0) {
+    const pct = stockPercentage(p);
+    if (pct === 0) return "out-of-stock";
+    if (pct <= 24) return "critically-low";
+    if (pct <= 49) return "low-stock";
+    if (pct <= 74) return "moderate-stock";
+    if (pct <= 99) return "in-stock";
+    return "stock-full";
+  }
+
+  if (p.qty <= 0) return "out-of-stock";
+  if (p.qty <= p.threshold) return "low-stock";
+  return "stock-full";
+}
+
+export function isLowStockAlert(p: Pick<Part, "qty" | "initial_qty" | "threshold">) {
+  const tier = stockAlertTier(p);
+  return tier === "out-of-stock" || tier === "critically-low" || tier === "low-stock";
 }
 
 export function generateSku(make: string, category: string) {
