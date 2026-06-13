@@ -66,13 +66,13 @@ function HistogramSection({
   const max = useMemo(() => data.reduce((m, r) => Math.max(m, r.count), 0), [data]);
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center justify-between mb-3">
+    <div className="rounded-xl border border-border bg-card p-4 shadow-card hover:border-primary/40 transition">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
         <div>
           <div className="text-xs text-muted-foreground">Sales Histogram</div>
           <div className="font-semibold">Sells per day</div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <label className="text-xs text-muted-foreground">From</label>
           <input
             type="date"
@@ -215,25 +215,25 @@ function ReportsPage() {
 
       {/* KPI cards */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="p-4 rounded-xl bg-card border border-border animate-pulse">
+            <div key={i} className="p-4 rounded-xl bg-card border border-border shadow-card animate-pulse">
               <div className="h-3 w-24 bg-muted rounded mb-3" />
               <div className="h-8 w-16 bg-muted rounded" />
             </div>
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 rounded-xl bg-card border border-border">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="p-4 rounded-xl bg-card border border-border shadow-card hover:border-primary/40 transition">
             <div className="text-xs text-muted-foreground">Transactions</div>
             <div className="font-display text-2xl font-bold mt-2">{totals.transactions}</div>
           </div>
-          <div className="p-4 rounded-xl bg-card border border-border">
+          <div className="p-4 rounded-xl bg-card border border-border shadow-card hover:border-primary/40 transition">
             <div className="text-xs text-muted-foreground">Items Sold</div>
             <div className="font-display text-2xl font-bold mt-2">{totals.itemsSold}</div>
           </div>
-          <div className="p-4 rounded-xl bg-card border border-border">
+          <div className="p-4 rounded-xl bg-card border border-border shadow-card hover:border-primary/40 transition">
             <div className="text-xs text-muted-foreground">Revenue</div>
             <div className="font-display text-2xl font-bold mt-2">${totals.revenue.toFixed(2)}</div>
             <div className="text-sm text-muted-foreground">
@@ -253,7 +253,7 @@ function ReportsPage() {
       />
 
       {/* Transaction table */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card hover:border-primary/40 transition">
         {loading ? (
           <div className="flex items-center justify-center gap-3 py-16 text-muted-foreground text-sm">
             <RefreshCw className="size-5 animate-spin" />
@@ -264,15 +264,15 @@ function ReportsPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-3 text-left">Date</th>
-                  <th className="px-4 py-3 text-left">Time</th>
+                  <th className="px-4 py-3 text-left hidden sm:table-cell">Date</th>
+                  <th className="px-4 py-3 text-left hidden sm:table-cell">Time</th>
                   <th className="px-4 py-3 text-left">Item</th>
-                  <th className="px-4 py-3 text-left">SKU</th>
-                  <th className="px-4 py-3 text-right">Qty</th>
-                  <th className="px-4 py-3 text-right">Price</th>
+                  <th className="px-4 py-3 text-left hidden md:table-cell">SKU</th>
+                  <th className="px-4 py-3 text-right hidden md:table-cell">Qty</th>
+                  <th className="px-4 py-3 text-right hidden md:table-cell">Price</th>
                   <th className="px-4 py-3 text-right">Subtotal</th>
-                  <th className="px-4 py-3 text-left">Cashier</th>
-                  <th className="px-4 py-3 text-left">Tx ID</th>
+                  <th className="px-4 py-3 text-left hidden lg:table-cell">Cashier</th>
+                  <th className="px-4 py-3 text-left hidden lg:table-cell">Tx ID</th>
                 </tr>
               </thead>
               <tbody>
@@ -285,21 +285,21 @@ function ReportsPage() {
                 ) : (
                   flattened.map((r, i) => (
                     <tr key={`${r.txId}-${i}`} className="border-t border-border hover:bg-muted/20 transition-colors">
-                      <td className="px-4 py-3 text-muted-foreground tabular-nums">
+                      <td className="px-4 py-3 text-muted-foreground tabular-nums hidden sm:table-cell">
                         {format(new Date(r.ts), "dd/MM/yyyy")}
                       </td>
-                      <td className="px-4 py-3 tabular-nums">{r.time}</td>
+                      <td className="px-4 py-3 tabular-nums hidden sm:table-cell">{r.time}</td>
                       <td className="px-4 py-3 font-medium">{r.name}</td>
-                      <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{r.sku}</td>
-                      <td className="px-4 py-3 text-right tabular-nums">{r.qty}</td>
-                      <td className="px-4 py-3 text-right tabular-nums">${r.price.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-muted-foreground font-mono text-xs hidden md:table-cell">{r.sku}</td>
+                      <td className="px-4 py-3 text-right tabular-nums hidden md:table-cell">{r.qty}</td>
+                      <td className="px-4 py-3 text-right tabular-nums hidden md:table-cell">${r.price.toFixed(2)}</td>
                       <td className="px-4 py-3 text-right tabular-nums font-semibold">
                         ${r.subtotal.toFixed(2)}
                       </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground truncate max-w-[140px]">
+                      <td className="px-4 py-3 text-xs text-muted-foreground truncate max-w-[140px] hidden lg:table-cell">
                         {r.cashier}
                       </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground font-mono">
+                      <td className="px-4 py-3 text-xs text-muted-foreground font-mono hidden lg:table-cell">
                         {r.txId.slice(0, 8)}…
                       </td>
                     </tr>

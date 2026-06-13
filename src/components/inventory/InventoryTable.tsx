@@ -201,7 +201,60 @@ export function InventoryTable({ parts, loading, missingInitialQty }: { parts: P
         <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleImport} className="hidden" />
       </div>
 
-      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card">
+      <div className="space-y-4 md:hidden">
+        {loading && Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="rounded-3xl border border-border bg-card p-4 shadow-card animate-pulse" />
+        ))}
+        {!loading && filtered.length === 0 && (
+          <div className="rounded-3xl border border-border bg-card p-6 text-center text-sm text-muted-foreground shadow-card">
+            <div className="flex flex-col items-center gap-3">
+              <div className="size-16 rounded-2xl bg-muted/40 grid place-items-center"><PackageX className="size-7 text-muted-foreground" /></div>
+              <div className="font-display text-lg">No parts found</div>
+              <p className="text-sm text-muted-foreground max-w-xs">Try adjusting your search or filters, or add a new part to your inventory.</p>
+            </div>
+          </div>
+        )}
+        {!loading && filtered.map((p) => (
+          <div key={p.id} className="rounded-3xl border border-border bg-card p-4 shadow-card">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-semibold text-base leading-tight">{p.name}</div>
+                <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  <span>{p.make}</span>
+                  <span>{p.category}</span>
+                </div>
+              </div>
+              <div className="text-right text-sm text-muted-foreground">
+                <div className="font-semibold text-foreground tabular-nums">{p.qty}</div>
+                in stock
+              </div>
+            </div>
+            <div className="mt-3 grid gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium">SKU</span>
+                <span className="truncate text-right">{p.sku || "—"}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium">Price</span>
+                <span className="text-right">${Number(p.price).toFixed(2)}</span>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+              <StatusBadge qty={p.qty} initial_qty={p.initial_qty ?? p.qty} threshold={p.threshold} />
+              <div className="flex gap-1">
+                <Button size="icon" variant="ghost" onClick={() => { setEditing(p); setOpen(true); }} className="size-8">
+                  <Pencil className="size-4" />
+                </Button>
+                <Button size="icon" variant="ghost" onClick={() => setConfirmDel(p)} className="size-8 hover:text-destructive">
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden md:rounded-xl md:border md:border-border md:bg-card md:overflow-hidden md:shadow-card md:block">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">

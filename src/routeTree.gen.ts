@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as RecentSalesRouteImport } from './routes/recent-sales'
+import { Route as PointOfSaleRouteImport } from './routes/point-of-sale'
 import { Route as InventoryRouteImport } from './routes/inventory'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CashierRouteImport } from './routes/cashier'
@@ -26,6 +28,16 @@ const SettingsRoute = SettingsRouteImport.update({
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecentSalesRoute = RecentSalesRouteImport.update({
+  id: '/recent-sales',
+  path: '/recent-sales',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PointOfSaleRoute = PointOfSaleRouteImport.update({
+  id: '/point-of-sale',
+  path: '/point-of-sale',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InventoryRoute = InventoryRouteImport.update({
@@ -66,6 +78,8 @@ export interface FileRoutesByFullPath {
   '/cashier': typeof CashierRoute
   '/dashboard': typeof DashboardRoute
   '/inventory': typeof InventoryRoute
+  '/point-of-sale': typeof PointOfSaleRoute
+  '/recent-sales': typeof RecentSalesRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
 }
@@ -76,6 +90,8 @@ export interface FileRoutesByTo {
   '/cashier': typeof CashierRoute
   '/dashboard': typeof DashboardRoute
   '/inventory': typeof InventoryRoute
+  '/point-of-sale': typeof PointOfSaleRoute
+  '/recent-sales': typeof RecentSalesRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
 }
@@ -87,6 +103,8 @@ export interface FileRoutesById {
   '/cashier': typeof CashierRoute
   '/dashboard': typeof DashboardRoute
   '/inventory': typeof InventoryRoute
+  '/point-of-sale': typeof PointOfSaleRoute
+  '/recent-sales': typeof RecentSalesRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
 }
@@ -99,6 +117,8 @@ export interface FileRouteTypes {
     | '/cashier'
     | '/dashboard'
     | '/inventory'
+    | '/point-of-sale'
+    | '/recent-sales'
     | '/reports'
     | '/settings'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +129,8 @@ export interface FileRouteTypes {
     | '/cashier'
     | '/dashboard'
     | '/inventory'
+    | '/point-of-sale'
+    | '/recent-sales'
     | '/reports'
     | '/settings'
   id:
@@ -119,6 +141,8 @@ export interface FileRouteTypes {
     | '/cashier'
     | '/dashboard'
     | '/inventory'
+    | '/point-of-sale'
+    | '/recent-sales'
     | '/reports'
     | '/settings'
   fileRoutesById: FileRoutesById
@@ -130,6 +154,8 @@ export interface RootRouteChildren {
   CashierRoute: typeof CashierRoute
   DashboardRoute: typeof DashboardRoute
   InventoryRoute: typeof InventoryRoute
+  PointOfSaleRoute: typeof PointOfSaleRoute
+  RecentSalesRoute: typeof RecentSalesRoute
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
 }
@@ -148,6 +174,20 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports'
       preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recent-sales': {
+      id: '/recent-sales'
+      path: '/recent-sales'
+      fullPath: '/recent-sales'
+      preLoaderRoute: typeof RecentSalesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/point-of-sale': {
+      id: '/point-of-sale'
+      path: '/point-of-sale'
+      fullPath: '/point-of-sale'
+      preLoaderRoute: typeof PointOfSaleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/inventory': {
@@ -202,6 +242,8 @@ const rootRouteChildren: RootRouteChildren = {
   CashierRoute: CashierRoute,
   DashboardRoute: DashboardRoute,
   InventoryRoute: InventoryRoute,
+  PointOfSaleRoute: PointOfSaleRoute,
+  RecentSalesRoute: RecentSalesRoute,
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,
 }

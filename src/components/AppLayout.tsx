@@ -62,7 +62,8 @@ export function AppLayout() {
       return;
     }
 
-    if (userRole === "cashier" && path !== "/cashier") {
+    const allowedCashierPaths = ["/cashier", "/recent-sales", "/point-of-sale"];
+    if (userRole === "cashier" && !allowedCashierPaths.includes(path)) {
       navigate({ to: "/cashier", replace: true } as any);
     } else if (userRole === "admin" && path === "/cashier") {
       navigate({ to: "/dashboard", replace: true } as any);
@@ -86,7 +87,7 @@ export function AppLayout() {
     );
   }
 
-  const isCashierRoute = path === "/cashier";
+  const isCashierRoute = path === "/cashier" || userRole === "cashier";
   if (isCashierRoute) {
     return (
       <>
@@ -172,11 +173,36 @@ export function AppLayout() {
         <div className="fixed inset-0 z-10 bg-background/70 md:hidden" onClick={() => setOpen(false)} />
       )}
 
-      <main className="flex-1 min-w-0 pt-14 md:pt-0">
+      <main className="flex-1 min-w-0 pt-14 pb-20 md:pt-0 md:pb-0">
         <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 animate-fade-up">
           <Outlet />
         </div>
       </main>
+
+      <nav className="fixed bottom-0 inset-x-0 z-30 md:hidden border-t border-sidebar-border bg-sidebar/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl justify-between px-2 py-2">
+          {NAV.map((item) => {
+            const isActive = item.exact ? path === item.to : path.startsWith(item.to);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={() => setOpen(false)}
+                className={cn(
+                  "flex-1 flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition",
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground/70 hover:text-sidebar-foreground",
+                )}
+              >
+                <Icon className="size-5" />
+                <span className="truncate">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
 
       <Toaster position="top-right" richColors />
     </div>
